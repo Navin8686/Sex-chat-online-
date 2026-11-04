@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="hi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sex Chat Online - Anonymous Stranger & Group Chat</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#090d16',
+                        brandCard: '#131b2e',
+                        brandAccent: '#ff2a5f',
+                        brandPurple: '#8b5cf6',
+                        brandCyan: '#06b6d4',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(19, 27, 46, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .chat-bg {
+            background-color: #090d16;
+            background-image: radial-gradient(rgba(255, 42, 95, 0.05) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .spoiler-blur {
+            filter: blur(14px);
+            transition: filter 0.3s ease;
+        }
+        .spoiler-blur:hover, .spoiler-blur.revealed {
+            filter: blur(0);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,42,95,0.5); }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- 18+ Age Verification Modal Overlay -->
+    <div id="ageModal" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="glass-card max-w-sm w-full rounded-3xl p-6 border border-rose-500/30 text-center space-y-5 shadow-2xl">
+            <div class="w-16 h-16 rounded-2xl bg-rose-500/20 text-rose-500 border border-rose-500/30 flex items-center justify-center text-3xl font-black mx-auto">
+                18+
+            </div>
+            <div>
+                <h2 class="text-xl font-black text-white">Age Verification Required</h2>
+                <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+                    Yeh website sirf 18 saal ya usse adhik umar ke adult users ke liye hai. Kya aapki umar 18+ hai?
+                </p>
+            </div>
+            <div class="flex flex-col gap-2.5 pt-2">
+                <button onclick="confirmAge(true)" class="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-purple-600 text-white font-extrabold text-xs shadow-lg shadow-rose-600/30 hover:opacity-95 transition-all">
+                    Haan, Main 18+ Hoon (Enter Site)
+                </button>
+                <button onclick="confirmAge(false)" class="w-full py-2.5 rounded-2xl bg-white/5 text-gray-400 text-xs hover:bg-white/10 transition-all border border-white/5">
+                    Nahi, Meri Umar 18 se kam hai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login / Registration Selector Modal -->
+    <div id="authModal" class="fixed inset-0 z-[90] bg-black/90 backdrop-blur-lg flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full rounded-3xl p-6 border border-brandCyan/30 relative space-y-5">
+            <div class="text-center">
+                <h2 class="text-xl font-black text-white flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-shield text-brandCyan"></i> Choose Login Mode
+                </h2>
+                <p class="text-xs text-gray-400 mt-1">Select how you want to join Sex Chat Online</p>
+            </div>
+
+            <!-- Tabs: Guest vs Registered -->
+            <div class="grid grid-cols-2 p-1 bg-white/5 rounded-xl border border-white/10">
+                <button id="tabGuestBtn" onclick="switchAuthTab('guest')" class="py-2 text-xs font-bold rounded-lg bg-brandCyan text-gray-950 transition-all">
+                    ⚡ Guest ID (Fast)
+                </button>
+                <button id="tabMemberBtn" onclick="switchAuthTab('member')" class="py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all">
+                    👑 Registered Member
+                </button>
+            </div>
+
+            <!-- Guest Login View -->
+            <div id="guestForm" class="space-y-4">
+                <p class="text-xs text-gray-400 bg-white/5 p-3 rounded-xl border border-white/5">
+                    💡 Guest Mode me aapko koi email/password ki zaroorat nahi hai. Ek random temporary ID assign hogi.
+                </p>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Guest Nickname</label>
+                    <input type="text" id="guestNameInput" value="Guest_User" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brandCyan">
+                </div>
+                <button onclick="loginAsGuest()" class="w-full py-3 rounded-xl bg-brandCyan text-gray-950 font-extrabold text-xs shadow-md shadow-brandCyan/20 hover:opacity-95 transition-all">
+                    Continue as Guest ID
+                </button>
+            </div>
+
+            <!-- Member Login View -->
+            <div id="memberForm" class="space-y-3 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Email Address</label>
+                    <input type="email" id="memberEmailInput" placeholder="example@email.com" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-purple-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Username / Nickname</label>
+                    <input type="text" id="memberNameInput" placeholder="Apna nickname dalein" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-purple-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Password</label>
+                    <input type="password" id="memberPassInput" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-purple-400">
+                </div>
+                <button onclick="loginAsMember()" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-rose-600 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all">
+                    Login / Register with Email
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="h-16 border-b border-white/10 bg-gray-950/80 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-30">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brandAccent to-purple-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brandAccent/30">
+                <i class="fa-solid fa-comments"></i>
+            </div>
+            <div>
+                <h1 class="font-black text-base tracking-wide bg-gradient-to-r from-rose-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">
+                    Sex Chat Online
+                </h1>
+                <p class="text-[10px] text-gray-400 font-medium">Anonymous 1-on-1 & Random Group Chat</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- Radio Player Toggle -->
+            <button onclick="toggleRadio()" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
+                <i class="fa-solid fa-radio text-rose-400 animate-pulse" id="radioIcon"></i>
+                <span class="hidden sm:inline" id="radioLabel">Live Radio</span>
+            </button>
+
+            <!-- Admin Modal Toggle -->
+            <button onclick="toggleAdminModal()" class="w-9 h-9 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 flex items-center justify-center transition-all">
+                <i class="fa-solid fa-key text-xs"></i>
+            </button>
+
+            <!-- Account Status Tag -->
+            <div class="flex items-center gap-2">
+                <span id="userStatusTag" class="text-[10px] bg-white/10 px-2.5 py-1 rounded-full text-gray-300 font-bold border border-white/10">Guest Mode</span>
+                <button onclick="document.getElementById('authModal').classList.remove('hidden')" class="text-xs bg-white/5 hover:bg-white/10 text-brandCyan px-3 py-1.5 rounded-xl border border-white/10 transition-all font-bold">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Switch ID
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden relative chat-bg">
+        
+        <!-- Sidebar Navigation (Rooms & Profile) -->
+        <aside class="w-72 border-r border-white/10 bg-brandCard/50 flex flex-col hidden md:flex shrink-0">
+            <!-- Profile Card -->
+            <div class="p-4 border-b border-white/10">
+                <div class="glass-card rounded-2xl p-3 border border-white/10 flex items-center gap-3">
+                    <div class="relative">
+                        <div id="userAvatarBox" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-2xl shadow-md border-2 border-transparent">
+                            😈
+                        </div>
+                        <span id="badgeIcon" class="absolute -top-1.5 -right-1.5 bg-amber-400 text-gray-950 text-[10px] px-1.5 py-0.5 rounded-full font-black shadow hidden">👑</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 id="displayNickName" class="font-bold text-sm text-white truncate">Guest User</h3>
+                        <p id="displayBadgeText" class="text-[10px] text-gray-400 font-semibold">Standard Member</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Room Tabs -->
+            <div class="p-3 pb-1">
+                <div class="text-[10px] font-black text-gray-400 tracking-wider uppercase px-2 mb-2">Modes</div>
+                <div class="space-y-1">
+                    <button onclick="switchMode('groups')" id="btnModeGroups" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/10 text-white font-bold text-xs transition-all">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-users text-cyan-400"></i> Public Group Rooms (All Online)</span>
+                        <span class="bg-rose-500/20 text-rose-400 text-[9px] px-1.5 py-0.5 rounded-full font-extrabold">LIVE</span>
+                    </button>
+                    <button onclick="switchMode('1on1')" id="btnMode1on1" class="w-full flex items-center justify-between p-2.5 rounded-xl text-gray-400 hover:bg-white/5 font-semibold text-xs transition-all">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-user-secret text-rose-400"></i> Random 1-on-1 Private Match</span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Online Users Section Sidebar -->
+            <div class="p-3 flex-1 flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between px-2 mb-2">
+                    <div class="text-[10px] font-black text-gray-400 tracking-wider uppercase">Active Lounge Members</div>
+                    <span id="onlineCountBadge" class="text-[10px] bg-emerald-500/20 text-emerald-300 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                        🟢 142 Users Online
+                    </span>
+                </div>
+                
+                <!-- Online Users Scroll Area -->
+                <div id="onlineUsersList" class="flex-1 overflow-y-auto space-y-1.5 pr-1">
+                    <div onclick="startDirectUserChat('Neha_Love', '👩🏻')" class="p-2 glass-card rounded-xl border border-white/5 hover:border-rose-500/40 cursor-pointer flex items-center gap-2.5 transition-all">
+                        <div class="relative">
+                            <span class="text-xl">👩🏻</span>
+                            <span class="w-2 h-2 bg-emerald-400 rounded-full absolute bottom-0 right-0 border border-gray-950"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h5 class="text-xs font-bold text-white truncate flex items-center gap-1">Neha_Love <span class="text-[9px]">👑</span></h5>
+                            <p class="text-[9px] text-gray-400 truncate">Chatting in Global Lounge</p>
+                        </div>
+                    </div>
+
+                    <div onclick="startDirectUserChat('Rahul_Vip', '👦🏻')" class="p-2 glass-card rounded-xl border border-white/5 hover:border-rose-500/40 cursor-pointer flex items-center gap-2.5 transition-all">
+                        <div class="relative">
+                            <span class="text-xl">👦🏻</span>
+                            <span class="w-2 h-2 bg-emerald-400 rounded-full absolute bottom-0 right-0 border border-gray-950"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h5 class="text-xs font-bold text-white truncate flex items-center gap-1">Rahul_Vip <span class="text-[9px]">💎</span></h5>
+                            <p class="text-[9px] text-gray-400 truncate">Online & active</p>
+                        </div>
+                    </div>
+
+                    <div onclick="startDirectUserChat('Priya_Angel', '👩🏼')" class="p-2 glass-card rounded-xl border border-white/5 hover:border-rose-500/40 cursor-pointer flex items-center gap-2.5 transition-all">
+                        <div class="relative">
+                            <span class="text-xl">👩🏼</span>
+                            <span class="w-2 h-2 bg-emerald-400 rounded-full absolute bottom-0 right-0 border border-gray-950"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h5 class="text-xs font-bold text-white truncate">Priya_Angel</h5>
+                            <p class="text-[9px] text-gray-400 truncate">Sharing pics in Group</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group Room List -->
+            <div id="groupRoomList" class="overflow-y-auto px-3 space-y-2 border-t border-white/10 pt-2 pb-3">
+                <div class="text-[10px] font-black text-gray-400 tracking-wider uppercase px-2 my-1">Public Lounges</div>
+                <div onclick="joinGroupRoom('🔥 Global Lounge (All Users)', 142)" class="p-3 glass-card rounded-xl border border-rose-500/40 bg-rose-500/10 cursor-pointer transition-all">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="text-xs font-bold text-white">🔥 Global Lounge</h4>
+                        <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold">142 Live</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 truncate">Random multi-user main party room</p>
+                </div>
+                <div onclick="joinGroupRoom('📸 Photo Swap Party', 89)" class="p-3 glass-card rounded-xl border border-white/5 hover:border-purple-500/40 cursor-pointer transition-all">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="text-xs font-bold text-white">📸 Photo Swap Party</h4>
+                        <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold">89 Live</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 truncate">Share pics & spoiler snaps</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Chat Area -->
+        <section class="flex-1 flex flex-col h-full overflow-hidden">
+            <!-- Active Room Header -->
+            <div class="h-12 border-b border-white/10 bg-brandCard/40 px-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span id="activeRoomIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                    <h2 id="activeRoomTitle" class="text-xs font-bold text-white tracking-wide">🔥 Global Lounge (142 Users Online)</h2>
+                </div>
+                <button onclick="switchMode('1on1')" class="bg-gradient-to-r from-rose-600 to-purple-600 hover:opacity-90 text-white px-3 py-1 rounded-xl text-xs font-extrabold shadow-md transition-all">
+                    <i class="fa-solid fa-user-secret mr-1"></i> Switch to 1-on-1 Private
+                </button>
+            </div>
+
+            <!-- Messages List -->
+            <div id="chatMessageArea" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div class="text-center my-3">
+                    <span class="text-[10px] bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-emerald-300 font-bold">
+                        🌐 Connected to Global Multi-User Party Room. Send message to talk with all online strangers!
+                    </span>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="p-3 bg-brandCard/60 border-t border-white/10 shrink-0 space-y-2">
+                <div class="flex items-center gap-2">
+                    <!-- Image Upload -->
+                    <label class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-rose-400 border border-white/10 flex items-center justify-center cursor-pointer transition-all">
+                        <i class="fa-solid fa-image text-sm"></i>
+                        <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageAttach(event)">
+                    </label>
+
+                    <!-- Sticker/GIF Modal Launcher -->
+                    <button onclick="toggleStickerPicker()" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-amber-400 border border-white/10 flex items-center justify-center transition-all">
+                        <i class="fa-solid fa-face-smile text-sm"></i>
+                    </button>
+
+                    <!-- Text Field -->
+                    <input type="text" id="chatInput" placeholder="Type a message or share photo..." onkeydown="if(event.key==='Enter') sendMessage()" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-rose-500 transition-all">
+
+                    <!-- Send Button -->
+                    <button onclick="sendMessage()" class="w-10 h-10 rounded-xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-lg shadow-rose-600/30 transition-all">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Sticker / GIF Picker Drawer -->
+    <div id="stickerDrawer" class="fixed bottom-16 left-4 z-40 w-72 glass-card border border-white/10 rounded-2xl p-3 shadow-2xl hidden space-y-2">
+        <h4 class="text-xs font-bold text-gray-300">Telegram & GIF Stickers</h4>
+        <div class="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+            <button onclick="sendSticker('🔥')" class="p-2 hover:bg-white/10 rounded-xl text-xl">🔥</button>
+            <button onclick="sendSticker('😈')" class="p-2 hover:bg-white/10 rounded-xl text-xl">😈</button>
+            <button onclick="sendSticker('💋')" class="p-2 hover:bg-white/10 rounded-xl text-xl">💋</button>
+            <button onclick="sendSticker('❤️')" class="p-2 hover:bg-white/10 rounded-xl text-xl">❤️</button>
+            <button onclick="sendSticker('👀')" class="p-2 hover:bg-white/10 rounded-xl text-xl">👀</button>
+            <button onclick="sendSticker('💣')" class="p-2 hover:bg-white/10 rounded-xl text-xl">💣</button>
+            <button onclick="sendSticker('💦')" class="p-2 hover:bg-white/10 rounded-xl text-xl">💦</button>
+            <button onclick="sendSticker('⚡')" class="p-2 hover:bg-white/10 rounded-xl text-xl">⚡</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-sm w-full rounded-2xl p-5 border border-amber-500/30 space-y-4">
+            <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+                <i class="fa-solid fa-crown"></i> Admin Access Management
+            </h3>
+            <p class="text-[11px] text-gray-400">Grant custom VIP or Elite status to users</p>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1">Select Status</label>
+                <select id="adminRoleSelect" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+                    <option value="Free">Free Member</option>
+                    <option value="VIP">👑 VIP Member</option>
+                    <option value="Elite">💎 Elite Member</option>
+                </select>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="applyAdminRole()" class="flex-1 py-2 bg-amber-500 text-gray-950 font-bold text-xs rounded-xl hover:bg-amber-400">Apply Status</button>
+                <button onclick="toggleAdminModal()" class="px-4 py-2 bg-white/5 text-gray-400 font-bold text-xs rounded-xl hover:bg-white/10">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'groups';
+
+        function confirmAge(is18Plus) {
+            if (is18Plus) {
+                document.getElementById('ageModal').classList.add('hidden');
+            } else {
+                alert('Aapki umar 18 saal se kam hone ki wajah se aap is site ko access nahi kar sakte.');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                appendMultiUserMessage('Neha_Love 👑', '👩🏻', 'Hey everyone! Welcome to Sex Chat Online 🔥', 'text-amber-300');
+                appendMultiUserMessage('Rahul_Vip 💎', '👦🏻', 'Hello Neha! Kaun kaun live hai abhi?', 'text-cyan-300');
+                appendMultiUserMessage('Priya_Angel', '👩🏼', 'Main bhi online hoon! Anyone want to swap pics?', 'text-rose-300');
+            }, 600);
+        });
+
+        function appendMultiUserMessage(name, avatar, text, nameColorClass = 'text-gray-300') {
+            const chatArea = document.getElementById('chatMessageArea');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'flex justify-start';
+
+            msgDiv.innerHTML = `
+                <div class="max-w-[80%] bg-white/10 border border-white/10 p-3 rounded-2xl text-xs space-y-1 shadow-md">
+                    <div class="flex items-center gap-1.5 font-bold text-[11px] ${nameColorClass}">
+                        <span>${avatar}</span> ${name}
+                    </div>
+                    <p class="text-gray-200">${text}</p>
+                    <div class="text-[9px] opacity-50 text-right">Just now</div>
+                </div>
+            `;
+
+            chatArea.appendChild(msgDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const myName = document.getElementById('displayNickName').innerText;
+            appendMessage('me', text);
+            input.value = '';
+
+            if (currentMode === 'groups') {
+                setTimeout(() => {
+                    const randomUsers = [
+                        { name: 'Neha_Love 👑', avatar: '👩🏻', msg: myName + " hey! Welcome to group party 🎉", color: 'text-amber-300' },
+                        { name: 'Rahul_Vip 💎', avatar: '👦🏻', msg: "Nice text " + myName + "! Where are you from?", color: 'text-cyan-300' },
+                        { name: 'Alex_Rider', avatar: '🧔🏻', msg: "Yo " + myName + ", send some photos!", color: 'text-purple-300' }
+                    ];
+                    const randomPicked = randomUsers[Math.floor(Math.random() * randomUsers.length)];
+                    appendMultiUserMessage(randomPicked.name, randomPicked.avatar, randomPicked.msg, randomPicked.color);
+                }, 1300);
+            } else {
+                setTimeout(() => {
+                    appendMessage('stranger', "Hey! Kaise ho? Photo share karoge?");
+                }, 1200);
+            }
+        }
+
+        function joinGroupRoom(name, count) {
+            currentMode = 'groups';
+            document.getElementById('activeRoomTitle').innerText = name + " (" + count + " Users Online)";
+            const chatArea = document.getElementById('chatMessageArea');
+            chatArea.innerHTML = `<div class="text-center my-3"><span class="text-[10px] bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full text-cyan-300 font-bold">🎉 Joined ${name}. Start talking with everyone!</span></div>`;
+            setTimeout(() => {
+                appendMultiUserMessage('Priya_Angel', '👩🏼', 'Welcome to ' + name + '! 🔥', 'text-rose-300');
+            }, 500);
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const btn1 = document.getElementById('btnMode1on1');
+            const btnG = document.getElementById('btnModeGroups');
+
+            if (mode === '1on1') {
+                btn1.className = "w-full flex items-center justify-between p-2.5 rounded-xl bg-white/10 text-white font-bold text-xs transition-all";
+                btnG.className = "w-full flex items-center justify-between p-2.5 rounded-xl text-gray-400 hover:bg-white/5 font-semibold text-xs transition-all";
+                document.getElementById('activeRoomTitle').innerText = "Stranger #" + Math.floor(1000 + Math.random() * 9000);
+                const chatArea = document.getElementById('chatMessageArea');
+                chatArea.innerHTML = `<div class="text-center my-4"><span class="text-[10px] bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full text-rose-300 font-bold">🔒 Switched to Private 1-on-1 Chat.</span></div>`;
+            } else {
+                btnG.className = "w-full flex items-center justify-between p-2.5 rounded-xl bg-white/10 text-white font-bold text-xs transition-all";
+                btn1.className = "w-full flex items-center justify-between p-2.5 rounded-xl text-gray-400 hover:bg-white/5 font-semibold text-xs transition-all";
+                joinGroupRoom('🔥 Global Lounge', 142);
+            }
+        }
+
+        function switchAuthTab(tab) {
+            const guestBtn = document.getElementById('tabGuestBtn');
+            const memberBtn = document.getElementById('tabMemberBtn');
+            const guestForm = document.getElementById('guestForm');
+            const memberForm = document.getElementById('memberForm');
+
+            if (tab === 'guest') {
+                guestBtn.className = "py-2 text-xs font-bold rounded-lg bg-brandCyan text-gray-950 transition-all";
+                memberBtn.className = "py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+                guestForm.classList.remove('hidden');
+                memberForm.classList.add('hidden');
+            } else {
+                memberBtn.className = "py-2 text-xs font-bold rounded-lg bg-purple-500 text-white transition-all";
+                guestBtn.className = "py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+                memberForm.classList.remove('hidden');
+                guestForm.classList.add('hidden');
+            }
+        }
+
+        function loginAsGuest() {
+            const name = document.getElementById('guestNameInput').value.trim() || 'Guest_' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('displayNickName').innerText = name;
+            document.getElementById('userStatusTag').innerText = "Guest ID: " + name;
+            document.getElementById('userStatusTag').className = "text-[10px] bg-white/10 px-2.5 py-1 rounded-full text-gray-300 font-bold border border-white/10";
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function loginAsMember() {
+            const email = document.getElementById('memberEmailInput').value.trim();
+            const name = document.getElementById('memberNameInput').value.trim();
+            const pass = document.getElementById('memberPassInput').value.trim();
+
+            if (!email || !email.includes('@')) {
+                alert('Kripya sahi Email Address enter karein!');
+                return;
+            }
+            if (!name) {
+                alert('Kripya apna Username/Nickname dalein!');
+                return;
+            }
+            if (!pass || pass.length < 4) {
+                alert('Password kam se kam 4 characters ka hona chahiye!');
+                return;
+            }
+
+            document.getElementById('displayNickName').innerText = name;
+            document.getElementById('userStatusTag').innerText = "✓ Registered: " + name;
+            document.getElementById('userStatusTag').className = "text-[10px] bg-purple-500/20 text-purple-300 px-2.5 py-1 rounded-full font-bold border border-purple-500/30";
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function toggleRadio() {
+            const label = document.getElementById('radioLabel');
+            if (label.innerText === "Live Radio") {
+                label.innerText = "Playing Lofi FM";
+            } else {
+                label.innerText = "Live Radio";
+            }
+        }
+
+        function toggleAdminModal() {
+            document.getElementById('adminModal').classList.toggle('hidden');
+        }
+
+        function applyAdminRole() {
+            const role = document.getElementById('adminRoleSelect').value;
+            const badgeIcon = document.getElementById('badgeIcon');
+            const badgeText = document.getElementById('displayBadgeText');
+
+            if (role === 'VIP') {
+                badgeIcon.innerText = "👑";
+                badgeIcon.classList.remove('hidden');
+                badgeText.innerText = "VIP Member";
+                badgeText.className = "text-[10px] text-amber-400 font-bold";
+            } else if (role === 'Elite') {
+                badgeIcon.innerText = "💎";
+                badgeIcon.classList.remove('hidden');
+                badgeText.innerText = "Elite Member";
+                badgeText.className = "text-[10px] text-cyan-400 font-bold";
+            } else {
+                badgeIcon.classList.add('hidden');
+                badgeText.innerText = "Standard Member";
+                badgeText.className = "text-[10px] text-gray-400 font-semibold";
+            }
+            toggleAdminModal();
+        }
+
+        function toggleStickerPicker() {
+            document.getElementById('stickerDrawer').classList.toggle('hidden');
+        }
+
+        function sendSticker(emoji) {
+            appendMessage('me', emoji);
+            toggleStickerPicker();
+        }
+
+        function appendMessage(sender, text) {
+            const chatArea = document.getElementById('chatMessageArea');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = sender === 'me' ? 'flex justify-end' : 'flex justify-start';
+
+            const bgClass = sender === 'me' ? 'bg-gradient-to-r from-rose-600 to-purple-600 text-white' : 'bg-white/10 text-gray-200 border border-white/10';
+            
+            msgDiv.innerHTML = `
+                <div class="max-w-[75%] ${bgClass} p-3 rounded-2xl text-xs space-y-1 shadow-md">
+                    <p>${text}</p>
+                    <div class="text-[9px] opacity-60 text-right">Just now</div>
+                </div>
+            `;
+
+            chatArea.appendChild(msgDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function handleImageAttach(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const chatArea = document.getElementById('chatMessageArea');
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = 'flex justify-end';
+                    msgDiv.innerHTML = `
+                        <div class="max-w-[65%] bg-rose-600 p-2 rounded-2xl space-y-1 shadow-md">
+                            <img src="${e.target.result}" class="rounded-xl w-full max-h-48 object-cover spoiler-blur cursor-pointer" onclick="this.classList.toggle('revealed')">
+                            <div class="text-[9px] text-white/70 text-right">Click to reveal spoiler blur</div>
+                        </div>
+                    `;
+                    chatArea.appendChild(msgDiv);
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+</html>
